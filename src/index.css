@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 25% 98%;
+    --foreground: 20 20% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 20 20% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 20% 12%;
+
+    --primary: 25 80% 52%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 160 40% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 30 15% 94%;
+    --muted-foreground: 20 10% 45%;
+
+    --accent: 30 30% 95%;
+    --accent-foreground: 20 20% 12%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 30 15% 90%;
+    --input: 30 15% 90%;
+    --ring: 25 80% 52%;
+
+    --radius: 0.75rem;
+
+    /* Extended palette */
+    --warm-50: 30 30% 98%;
+    --warm-100: 30 25% 95%;
+    --warm-200: 30 20% 90%;
+    --amber: 25 80% 52%;
+    --amber-light: 30 60% 95%;
+    --teal: 160 40% 45%;
+    --teal-light: 160 30% 94%;
+    --coral: 12 70% 60%;
+    --coral-light: 12 60% 95%;
+    --violet: 260 45% 58%;
+    --violet-light: 260 40% 96%;
+    --blue: 215 60% 55%;
+    --blue-light: 215 50% 95%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 25 80% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 25 80% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
