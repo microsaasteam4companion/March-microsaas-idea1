@@ -6,47 +6,47 @@
 
 @layer base {
   :root {
-    /* Pure, clean background */
-    --background: 0 0% 100%;
-    /* Dark slate gray text for softer high contrast */
-    --foreground: 222.2 84% 4.9%;
+    /* Warm off-white background */
+    --background: 30 25% 98%;
+    /* Deep charcoal/dark brown text */
+    --foreground: 20 20% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 20 20% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 20 20% 12%;
 
-    /* Deep sophisticated navy blue as the primary action color */
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Vibrant amber/orange primary action color */
+    --primary: 25 80% 52%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Muted classic secondary (slate) */
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Teal secondary color */
+    --secondary: 160 40% 45%;
+    --secondary-foreground: 0 0% 100%;
 
-    /* Very subtle grays for backgrounds/borders */
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Subtle grays/beiges for backgrounds/borders */
+    --muted: 30 30% 95%;
+    --muted-foreground: 20 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 30 30% 95%;
+    --accent-foreground: 20 20% 12%;
 
-    /* Classic red for destructive actions */
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Red for destructive actions */
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 30 15% 90%;
+    --input: 30 15% 90%;
+    --ring: 25 80% 52%;
 
     /* More refined, less bubbly corners */
     --radius: 0.5rem;
 
     /* Extended palette - repointed to classic subtle tones for charts/stats to avoid compilation errors but keep them muted */
-    --warm-50: 210 40% 98%;
-    --warm-100: 210 40% 96.1%;
-    --warm-200: 214.3 31.8% 91.4%;
+    --warm-50: 30 30% 98%;
+    --warm-100: 30 30% 95%;
+    --warm-200: 30 15% 90%;
     --amber: 38 92% 50%;
     --amber-light: 48 96% 89%;
     --teal: 173 58% 39%;
@@ -59,13 +59,58 @@
     --blue-light: 221 100% 95%;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222.2 84% 4.9%;
-    --sidebar-primary: 222.2 47.4% 11.2%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 40% 96.1%;
-    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-    --sidebar-border: 214.3 31.8% 91.4%;
-    --sidebar-ring: 222.2 84% 4.9%;
+    --sidebar-foreground: 20 20% 12%;
+    --sidebar-primary: 25 80% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 30% 95%;
+    --sidebar-accent-foreground: 20 20% 12%;
+    --sidebar-border: 30 15% 90%;
+    --sidebar-ring: 25 80% 52%;
+  }
+
+  .dark {
+    /* Dark background */
+    --background: 20 20% 12%;
+    /* Light text */
+    --foreground: 30 25% 98%;
+
+    --card: 20 15% 15%;
+    --card-foreground: 30 25% 98%;
+
+    --popover: 20 15% 15%;
+    --popover-foreground: 30 25% 98%;
+
+    /* Keep vibrant amber/orange primary action color, maybe slightly adjusted for dark mode */
+    --primary: 25 80% 52%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Teal secondary color */
+    --secondary: 160 40% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Adjusted muted tones for dark backgrounds */
+    --muted: 20 15% 20%;
+    --muted-foreground: 30 15% 70%;
+
+    --accent: 20 15% 20%;
+    --accent-foreground: 30 25% 98%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 20 15% 25%;
+    --input: 20 15% 25%;
+    --ring: 25 80% 52%;
+
+    /* Dark mode sidebar equivalents */
+    --sidebar-background: 20 15% 15%;
+    --sidebar-foreground: 30 25% 98%;
+    --sidebar-primary: 25 80% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 20 15% 20%;
+    --sidebar-accent-foreground: 30 25% 98%;
+    --sidebar-border: 20 15% 25%;
+    --sidebar-ring: 25 80% 52%;
   }
 }
 
