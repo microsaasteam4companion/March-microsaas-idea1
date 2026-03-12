@@ -16,6 +16,7 @@ import dogFrenchie from "@/assets/dog_french_bulldog.png";
 import dogSamoyed from "@/assets/dog_samoyed.png";
 import catMaineCoon from "@/assets/cat_maine_coon.png";
 import catGinger from "@/assets/cat_ginger.png";
+import logoPaw from "@/assets/logo-paw.png";
 import { useAuth } from "@/lib/authContext";
 import { usePets } from "@/hooks/usePets";
 import { useEvents } from "@/hooks/useEvents";
@@ -29,15 +30,13 @@ const quickActions = [
   { id: "med", icon: Pill, label: "Log Medication", color: "bg-amber-light text-primary" },
   { id: "health", icon: HeartPulse, label: "Health Check", color: "bg-coral-light text-coral" },
   { id: "doc", icon: Sparkles, label: "AI Scan Doc", color: "bg-violet text-white shadow-sm shadow-violet/20" },
-  { id: "photo", icon: Camera, label: "Add Photo", color: "bg-blue-light text-blue" },
-  { id: "insurance", icon: Shield, label: "Insurance", color: "bg-teal-light text-secondary" },
 ];
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { pets, loading: petsLoading, deletePet, updatePet } = usePets(user?.uid);
-  const { events, loading: eventsLoading, deleteEvent } = useEvents(user?.uid);
+  const { events, loading: eventsLoading, deleteEvent, addEvent } = useEvents(user?.uid);
   const { activities, addActivity } = useActivities(user?.uid);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,28 +63,115 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedActivityForAI, setSelectedActivityForAI] = useState<PetActivity | null>(null);
 
+  const processMedicalText = (text: string) => {
+    const lowerText = text.toLowerCase();
+    
+    // Risks
+    const riskKeywords = ["unwell", "poor condition", "sick", "disease", "infection", "abnormal", "critical", "pain", "fever", "diarrhea", "vomiting", "lethargy"];
+    const foundRisks = riskKeywords.filter(kw => lowerText.includes(kw));
+    const hasNegativeWords = foundRisks.length > 0;
+
+    // Medicines
+    const medicineMatches = [];
+    const medRegex = /([a-zA-Z0-9\-]+(?:\s+[a-zA-Z0-9\-]+){0,2})\s*(?:(?:mg|ml|tablets?|capsules?|drops?|mcg|g)\b)?\s*(?:to be taken|take|give)?\s*(\d+\s*times?(?:\s*a\s*day)?|twice a day|once a day|thrice a day|every \d+\s*hours?|bid|sid|tid|q\d+h)\s*(?:at\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm))?/gi;
+    let match;
+    while ((match = medRegex.exec(text)) !== null) {
+        const medName = match[1].trim();
+        const frequency = match[2].trim();
+        const specificTime = match[3] ? ` at ${match[3].trim()}` : '';
+        if (medName.toLowerCase() !== 'and' && medName.toLowerCase() !== 'the') {
+           medicineMatches.push(`Prescribed Medication: ${medName} - ${frequency}${specificTime}`);
+        }
+    }
+    if (medicineMatches.length === 0) {
+        if (lowerText.includes("twice a day") || lowerText.includes("bid") || lowerText.includes("2 times")) medicineMatches.push("Medication direction: Twice a day");
+        if (lowerText.includes("once a day") || lowerText.includes("sid") || lowerText.includes("1 time")) medicineMatches.push("Medication direction: Once a day");
+        if (lowerText.includes("thrice a day") || lowerText.includes("tid") || lowerText.includes("3 times")) medicineMatches.push("Medication direction: Thrice a day");
+    }
+
+    // Activities
+    const activityMatches = [];
+    if (lowerText.includes("walk") || lowerText.match(/exercise (\d+) mins/)) {
+       const actStr = text.match(/.{0,20}(?:exercise|walk).{0,30}/i);
+       activityMatches.push(`Activity Note: ${actStr ? actStr[0].trim() : "Light walks recommended"}`);
+    }
+    if (lowerText.includes("rest") || lowerText.includes("sleep") || lowerText.includes("cage")) {
+       activityMatches.push("Activity Note: Strict rest recommended.");
+    }
+    if (lowerText.includes("diet") || lowerText.includes("food")) {
+       const dietStr = text.match(/.{0,20}(?:diet|food|feed).{0,30}/i);
+       activityMatches.push(`Diet Note: ${dietStr ? dietStr[0].trim() : "Monitor food intake"}`);
+    }
+
+    let summary = `🩺 Medical Report Summary:\n\n`;
+    if (hasNegativeWords) {
+        summary += `⚠️ Potential Risks:\nThe report indicates possible health issues, specifically mentioning: ${foundRisks.join(", ")}. This may indicate an infection or condition that requires attention.\n\n`;
+        summary += `🛡️ Recommended Precautions:\n- Please consult your veterinarian to discuss these findings immediately.\n- Follow any prescribed medication strictly.`;
+    } else {
+        summary += `✅ Potential Risks:\nNo immediate critical risks detected. The document appears to reflect a routine checkup or normal parameters.\n\n`;
+        summary += `🛡️ Recommended Precautions:\n- Continue regular preventive care.\n- Maintain a balanced diet and regular exercise.`;
+    }
+
+    return { summary, hasNegativeWords, medicineMatches, activityMatches };
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const currentPet = pets[activePet] || pets[0];
-
     toast.promise(
       Tesseract.recognize(file, 'eng').then(async ({ data: { text } }) => {
         let loggedActivity = Promise.resolve();
+        const { summary, hasNegativeWords, medicineMatches, activityMatches } = processMedicalText(text);
 
+        // Name Matching for Pet Context Switching
         const lowerText = text.toLowerCase();
-        const negativeKeywords = ["unwell", "poor condition", "sick", "disease", "infection", "abnormal", "critical", "pain"];
+        let targetPetIndex = activePet;
+        let foundPet = pets.find((p, index) => {
+            if (p.name) {
+                // Use regex with word boundaries to ensure we match the exact name, regardless of surrounding punctuation
+                const nameRegex = new RegExp(`\\b${p.name.toLowerCase()}\\b`, 'i');
+                if (nameRegex.test(lowerText)) {
+                    targetPetIndex = index;
+                    return true;
+                }
+            }
+            return false;
+        });
 
-        const hasNegativeWords = negativeKeywords.some(kw => lowerText.includes(kw));
+        const currentPet = foundPet || pets[activePet] || pets[0];
+        
+        // Auto-switch pet view if we detected a distinct pet name in the text
+        if (foundPet && targetPetIndex !== activePet) {
+            setActivePet(targetPetIndex);
+            toast.success(`Detected ${currentPet.name}'s name in document. Switching profile.`);
+        }
 
         if (addActivity && currentPet) {
           loggedActivity = addActivity({
             petId: currentPet.id,
             petName: currentPet.name,
-            text: `Document text extracted:\n${text.substring(0, 100)}...${hasNegativeWords ? " (Flagged: Potential Health Issue)" : ""}`,
+            text: summary,
             iconName: "FileText" as any
           }) as unknown as Promise<void>;
+
+          for (const med of medicineMatches) {
+            // Also log literal medication events into their pet timeline for tracking
+            if (addEvent) {
+                await addEvent({
+                    petId: currentPet.id,
+                    petName: currentPet.name,
+                    title: med,
+                    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                    type: "medication",
+                    urgent: true
+                });
+            }
+            addActivity({ petId: currentPet.id, petName: currentPet.name, text: med, iconName: "Pill" as any });
+          }
+          for (const act of activityMatches) {
+            addActivity({ petId: currentPet.id, petName: currentPet.name, text: act, iconName: "Activity" as any });
+          }
         }
 
         if (hasNegativeWords && updatePet && currentPet) {
@@ -144,7 +230,22 @@ const Dashboard = () => {
   // Use dynamic default images if empty
   const getPetImage = (petObj: any) => {
     if (petObj.image) return petObj.image;
-    return petObj.species === "Cat" ? catPortrait : dogPortrait;
+    const species = (petObj.species || "").toLowerCase();
+    if (species.includes("cat")) return catPortrait;
+    if (species.includes("dog") || species.includes("puppy")) return dogPortrait;
+    
+    if (species.includes("bird") || species.includes("parrot") || species.includes("macaw") || species.includes("canary") || species.includes("cockatiel")) {
+        // Hash the pet's name to consistently pick one of the 3 bird avatars
+        const charSum = (petObj.name || "").split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+        const index = (charSum % 3) + 1;
+        return `/bird_avatar_${index}.png`;
+    }
+
+    if (species.includes("rabbit") || species.includes("bunny") || species.includes("guinea") || species.includes("hamster") || species.includes("exotic")) {
+        return `/other_pet_avatar.png`;
+    }
+    
+    return logoPaw; // Ultimate fallback
   };
 
   // Helper map for dynamically parsing icons from DB string
@@ -153,12 +254,16 @@ const Dashboard = () => {
     return icons[iconName] || Activity;
   };
 
-  const filteredActivity = searchQuery && pet
-    ? activities.filter(a => a.petId === pet.id && a.text.toLowerCase().includes(searchQuery.toLowerCase()))
-    : activities;
+  const filteredActivity = activities.filter(a => {
+    const matchesSearch = searchQuery ? a.text.toLowerCase().includes(searchQuery.toLowerCase()) : true;
+    const matchesPet = pet ? a.petId === pet.id : true;
+    return matchesSearch && matchesPet;
+  });
 
   // Filter dynamic events for Records tab
   const petRecords = pet ? events.filter(e => e.petId === pet.id && (e.type === "vaccine" || e.type === "medication")) : [];
+
+  const upcomingEvents = pet ? events.filter(e => e.petId === pet.id) : events;
 
   // Compute stats
   const avgHealth = pets.length > 0 ? Math.round(pets.reduce((acc, p) => acc + p.healthScore, 0) / pets.length) : 0;
@@ -166,7 +271,7 @@ const Dashboard = () => {
   const vaccinesDueCount = events.filter(e => e.type === "vaccine").length;
 
   // Compute Alerts based on urgent events
-  const urgentAlerts = events.filter(e => e.urgent);
+  const urgentAlerts = upcomingEvents.filter(e => e.urgent);
 
   return (
     <div className="min-h-screen bg-background">
@@ -393,14 +498,14 @@ const Dashboard = () => {
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                                 {[
                                   { label: "Weight", value: pet.weight, icon: Weight },
-                                  { label: "Medications", value: pet.medications.toString(), icon: Pill },
+                                  { label: "Medications", value: events.filter(e => e.petId === pet.id && e.type === "medication").map(m => m.title.replace(/Prescribed Medication:\s*/i, '').replace(/Medication direction:\s*/i, '').trim()).join(', ') || "0", icon: Pill },
                                   { label: "Last Vet Visit", value: pet.lastVisit, icon: Calendar },
                                   { label: "Next Vaccine", value: pet.nextVaccine.split("—")[0].trim(), icon: Syringe },
                                 ].map((s) => (
-                                  <div key={s.label} className="rounded-lg bg-accent/50 p-3 text-center">
-                                    <s.icon className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
-                                    <div className="text-base font-bold text-foreground">{s.value}</div>
-                                    <div className="text-xs text-muted-foreground">{s.label}</div>
+                                  <div key={s.label} className="rounded-lg bg-accent/50 p-3 text-center flex flex-col justify-center overflow-hidden">
+                                    <s.icon className="h-5 w-5 text-muted-foreground mx-auto mb-2 shrink-0" />
+                                    <div className={`font-bold text-foreground px-1 mb-0.5 ${s.label === 'Medications' && s.value !== '0' ? 'text-[10px] leading-tight line-clamp-2' : 'text-base truncate'}`} title={s.value}>{s.value}</div>
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</div>
                                   </div>
                                 ))}
                               </div>
@@ -545,9 +650,9 @@ const Dashboard = () => {
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </div>
               <div className="rounded-xl border border-border bg-card divide-y divide-border">
-                {events.length === 0 ? (
+                {upcomingEvents.length === 0 ? (
                   <div className="p-4 text-center text-sm text-muted-foreground">No upcoming events.</div>
-                ) : events.map((ev, i) => (
+                ) : upcomingEvents.map((ev, i) => (
                   <div key={i} className="group flex items-center justify-between gap-3 p-3 hover:bg-accent/30 transition-colors">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className={`h-8 w-8 rounded-md flex items-center justify-center shrink-0 border border-border/50 shadow-sm ${ev.type === "vaccine" ? "bg-accent text-foreground" :
@@ -677,6 +782,7 @@ const Dashboard = () => {
           onOpenChange={setShowAddEvent}
           petId={pet.id}
           petName={pet.name}
+          petScore={pet.healthScore}
           editEventData={eventToEdit}
           defaultType={defaultEventType}
         />

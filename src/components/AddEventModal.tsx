@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/authContext";
 import { useEvents } from "@/hooks/useEvents";
+import { useActivities } from "@/hooks/useActivities";
 import { Calendar, Syringe, Pill, AlertCircle } from "lucide-react";
 
 interface AddEventModalProps {
@@ -9,20 +10,26 @@ interface AddEventModalProps {
     onOpenChange: (open: boolean) => void;
     petId: string;
     petName: string;
+    petScore?: number;
     editEventData?: any; // Pass existing event data to switch to edit mode
     defaultType?: "vaccine" | "appointment" | "medication" | "other";
 }
 
-export function AddEventModal({ open, onOpenChange, petId, petName, editEventData, defaultType }: AddEventModalProps) {
+export function AddEventModal({ open, onOpenChange, petId, petName, petScore = 100, editEventData, defaultType }: AddEventModalProps) {
     const { user } = useAuth();
     const { addEvent, updateEvent } = useEvents(user?.uid);
+    const { addActivity } = useActivities(user?.uid);
 
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         title: "",
         date: "",
         type: "appointment" as "vaccine" | "appointment" | "medication" | "other",
-        urgent: false
+        urgent: false,
+        medDosage: "",
+        medFrequency: "",
+        vetName: "",
+        reason: ""
     });
 
     useEffect(() => {
@@ -33,23 +40,48 @@ export function AddEventModal({ open, onOpenChange, petId, petName, editEventDat
                     date: editEventData.date || "",
                     type: editEventData.type || "appointment",
                     urgent: editEventData.urgent || false,
+                    medDosage: "", medFrequency: "", vetName: "", reason: ""
                 });
-            } else {
-                setFormData({ title: "", date: "", type: defaultType || "appointment", urgent: false });
+                let autoTitle = "";
+                let autoReason = "";
+                if (defaultType === "appointment") {
+                    autoTitle = "General Health Check";
+                    if (petScore < 80) {
+                        autoTitle = "Follow-up Vet Visit";
+                        autoReason = "Recent low health score / unwell symptoms";
+                    }
+                }
+                setFormData({ title: autoTitle, date: "", type: defaultType || "appointment", urgent: petScore < 80 && defaultType === "appointment", medDosage: "", medFrequency: "", vetName: "", reason: autoReason });
             }
         }
-    }, [open, editEventData, defaultType]);
+    }, [open, editEventData, defaultType, petScore]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
+        let finalTitle = formData.title;
+        if (!editEventData) {
+            if (formData.type === "medication" && (formData.medDosage || formData.medFrequency)) {
+                finalTitle = `${formData.title} - ${formData.medDosage} ${formData.medFrequency}`.trim();
+            } else if (formData.type === "appointment" && (formData.vetName || formData.reason)) {
+                finalTitle = `${formData.title} (${formData.vetName ? formData.vetName + ' - ' : ''}${formData.reason})`.trim();
+            }
+        }
+
+        const payload = {
+            title: finalTitle,
+            date: formData.date,
+            type: formData.type,
+            urgent: formData.urgent
+        };
+
         let success;
         if (editEventData) {
-            success = await updateEvent(editEventData.id, formData);
+            success = await updateEvent(editEventData.id, payload);
         } else {
             success = await addEvent({
-                ...formData,
+                ...payload,
                 petId,
                 petName,
             });
@@ -57,6 +89,21 @@ export function AddEventModal({ open, onOpenChange, petId, petName, editEventDat
 
         setLoading(false);
         if (success) {
+            // Also log to recent activity timeline if it's a new event
+            if (!editEventData && addActivity) {
+                let textDesc = "Scheduled an appointment";
+                let iconN = "Calendar";
+                if (formData.type === "vaccine") { textDesc = `Scheduled vaccine: ${formData.title}`; iconN = "Syringe"; }
+                if (formData.type === "medication") { textDesc = `Logged medication: ${formData.title}`; iconN = "Pill"; }
+                if (formData.type === "appointment" || formData.type === "other") { textDesc = `Health check/appointment: ${formData.title}`; iconN = "Activity"; }
+                
+                addActivity({
+                    petId,
+                    petName,
+                    text: textDesc,
+                    iconName: iconN as any
+                });
+            }
             onOpenChange(false);
         }
     };
@@ -72,22 +119,78 @@ export function AddEventModal({ open, onOpenChange, petId, petName, editEventDat
                         <DialogTitle>{editEventData ? "Edit Event" : `Add Event for ${petName}`}</DialogTitle>
                     </div>
                     <DialogDescription>
-                        {editEventData ? "Modify your scheduled appointment or medication details." : "Schedule a new appointment, vaccine, or medication."}
+                        {editEventData 
+                            ? "Modify your scheduled appointment or medication details." 
+                            : formData.type === "appointment" 
+                                ? (petScore < 80 ? `💡 AI SUGGESTION: Based on ${petName}'s recent health drop, a follow-up visit is highly recommended.` : "Schedule a routine wellness exam or specific vet appointment.")
+                                : "Schedule a new appointment, vaccine, or medication."}
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                     <div>
-                        <label className="text-sm font-medium text-foreground mb-1 block">Title</label>
+                        <label className="text-sm font-medium text-foreground mb-1 block">
+                            {formData.type === "medication" ? "Medicine Name" : formData.type === "appointment" ? "Appointment Title" : "Title"}
+                        </label>
                         <input
                             type="text"
                             required
                             value={formData.title}
                             onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                            placeholder="e.g. Annual Checkup"
+                            placeholder={formData.type === "medication" ? "e.g. Amoxicillin" : formData.type === "appointment" ? "e.g. Annual Checkup" : "Event Title"}
                             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                     </div>
+
+                    {formData.type === "medication" && !editEventData && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm font-medium text-foreground mb-1 block">Dosage</label>
+                                <input
+                                    type="text"
+                                    value={formData.medDosage}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, medDosage: e.target.value }))}
+                                    placeholder="e.g. 50mg"
+                                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-foreground mb-1 block">Frequency</label>
+                                <input
+                                    type="text"
+                                    value={formData.medFrequency}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, medFrequency: e.target.value }))}
+                                    placeholder="e.g. Twice a day"
+                                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {formData.type === "appointment" && !editEventData && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm font-medium text-foreground mb-1 block">Vet/Clinic Name</label>
+                                <input
+                                    type="text"
+                                    value={formData.vetName}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, vetName: e.target.value }))}
+                                    placeholder="e.g. City Vet"
+                                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-foreground mb-1 block">Reason</label>
+                                <input
+                                    type="text"
+                                    value={formData.reason}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
+                                    placeholder="e.g. Vaccination"
+                                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
