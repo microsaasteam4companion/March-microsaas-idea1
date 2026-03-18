@@ -1,93 +1,81 @@
-import { Link } from "react-router-dom";
-import { Heart, Mail, Twitter, Instagram, Facebook, Github } from "lucide-react";
+import { useState } from "react";
+import { Heart, Mail, Twitter, Instagram, Linkedin, MessageCircle, Rss, Sun, Moon } from "lucide-react";
 
 const footerLinks = [
   {
-    title: "Product",
+    title: "Projects",
     links: [
-      { label: "Features", href: "#features" },
-      { label: "Pricing", href: "#pricing" },
-      { label: "For Clinics", href: "#" },
-      { label: "API Docs", href: "#" },
-      { label: "Changelog", href: "#" },
-      { label: "Integrations", href: "#" },
-    ],
-  },
-  {
-    title: "Resources",
-    links: [
-      { label: "Help Center", href: "#" },
-      { label: "Pet Health Blog", href: "#" },
-      { label: "Vaccination Guide", href: "#" },
-      { label: "Breed Database", href: "#" },
-      { label: "Community Forum", href: "#" },
-    ],
-  },
-  {
-    title: "Company",
-    links: [
-      { label: "About Us", href: "#" },
-      { label: "Careers", href: "#" },
-      { label: "Press Kit", href: "#" },
-      { label: "Contact", href: "#" },
-      { label: "Partners", href: "#" },
+      { label: "PetVault", href: "https://petvault.entrext.com" },
+      { label: "Pawnote", href: "https://pawnote.entrext.com" },
+      { label: "AquaOS", href: "https://aquaOS.entrext.com" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { label: "Privacy Policy", href: "#" },
-      { label: "Terms of Service", href: "#" },
-      { label: "Security", href: "#" },
-      { label: "HIPAA Compliance", href: "#" },
-      { label: "Cookie Policy", href: "#" },
+      { label: "FAQ", href: "#faq" },
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms of Service", href: "/terms" },
     ],
   },
 ];
 
 const socialLinks = [
-  { icon: Twitter, href: "#", label: "Twitter" },
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Facebook, href: "#", label: "Facebook" },
-  { icon: Github, href: "#", label: "GitHub" },
+  { icon: Twitter, href: "https://twitter.com/entrextlabs", label: "Twitter" },
+  { icon: Instagram, href: "https://www.instagram.com/entrext.labs/", label: "Instagram" },
+  { icon: Linkedin, href: "http://linkedin.com/company/entrext/", label: "LinkedIn" },
+  { icon: MessageCircle, href: "https://discord.com/invite/ZZx3cBrx2", label: "Discord" },
+  { icon: Rss, href: "https://entrextlabs.substack.com/subscribe", label: "Substack" },
 ];
 
 const Footer = () => {
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
+
+  const toggleTheme = () => {
+    const root = document.documentElement;
+    if (root.classList.contains("dark")) {
+      root.classList.remove("dark");
+      setIsDark(false);
+    } else {
+      root.classList.add("dark");
+      setIsDark(true);
+    }
+  };
+
   return (
     <footer className="border-t border-border bg-card">
-      {/* Newsletter section */}
       <div className="border-b border-border">
         <div className="container mx-auto px-6 py-12">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 max-w-5xl mx-auto">
             <div>
               <h3 className="text-lg font-bold text-foreground font-display mb-1">
-                Stay in the loop 🐾
+                Stay updated
               </h3>
               <p className="text-sm text-muted-foreground">
-                Pet health tips, product updates, and exclusive offers. No spam, ever.
+                Get product updates and exclusive offers directly to your inbox.
               </p>
             </div>
-            <div className="flex gap-2 w-full md:w-auto">
+            <form action="https://entrextlabs.substack.com/subscribe" target="_blank" method="GET" className="flex gap-2 w-full md:w-auto">
               <div className="flex items-center gap-2 bg-background rounded-lg border border-border px-4 py-2.5 flex-1 md:w-72">
                 <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
                 <input
                   type="email"
+                  name="email"
+                  required
                   placeholder="Your email address"
                   className="bg-transparent text-sm outline-none flex-1 placeholder:text-muted-foreground"
                 />
               </div>
-              <button className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity shrink-0">
+              <button type="submit" className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity shrink-0">
                 Subscribe
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </div>
 
-      {/* Links grid */}
       <div className="container mx-auto px-6 py-14">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-10">
-          {/* Brand column */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-10">
           <div className="col-span-2">
             <div className="flex items-center gap-2.5 mb-4">
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
@@ -102,12 +90,13 @@ const Footer = () => {
               and insurance — beautifully unified.
             </p>
 
-            {/* Social links */}
             <div className="flex items-center gap-3">
               {socialLinks.map((s) => (
                 <a
                   key={s.label}
                   href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label={s.label}
                   className="h-9 w-9 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
                 >
@@ -117,7 +106,6 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Link columns */}
           {footerLinks.map((col) => (
             <div key={col.title}>
               <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider mb-4">{col.title}</h4>
@@ -135,20 +123,22 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Bottom bar */}
       <div className="border-t border-border">
         <div className="container mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
             © 2026 PetCare OS, Inc. All rights reserved.
           </p>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            Made with <Heart className="h-3 w-3 text-destructive fill-destructive mx-0.5" /> for pet parents everywhere
+            Made with <Heart className="h-3 w-3 text-destructive fill-destructive mx-0.5" /> love from entrextlabs
           </div>
-          <div className="flex items-center gap-4">
-            <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Status</a>
-            <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Sitemap</a>
-            <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Accessibility</a>
-          </div>
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
+          >
+            {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+            {isDark ? "Light mode" : "Dark mode"}
+          </button>
         </div>
       </div>
     </footer>

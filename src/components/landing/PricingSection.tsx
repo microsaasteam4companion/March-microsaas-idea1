@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
-import { Check, ArrowRight } from "lucide-react";
+import { Check, ArrowRight, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 const plans = [
   {
@@ -22,7 +23,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "$12",
+    price: "$5",
     period: "/month",
     desc: "AI-powered intelligence for serious pet parents.",
     features: [
@@ -41,26 +42,59 @@ const plans = [
     ctaLink: "/auth?mode=signup&plan=pro",
     featured: true,
   },
+];
+
+const faqs = [
   {
-    name: "Clinic",
-    price: "$99",
-    period: "/month",
-    desc: "White-label portal for vet practices.",
-    features: [
-      "Everything in Pro",
-      "White-label branding",
-      "Pre-visit AI summaries",
-      "Patient dashboard",
-      "Vet record sync API",
-      "Multi-staff access",
-      "Custom integrations",
-      "Dedicated account manager",
-    ],
-    cta: "Contact Sales",
-    ctaLink: "#",
-    featured: false,
+    q: "Is PetCare OS free to use?",
+    a: "Yes! Our Free plan is completely free, forever. It includes unlimited pet profiles, vaccination records, medication reminders, and 500MB of document storage — no credit card required.",
+  },
+  {
+    q: "How many pets can I add to my account?",
+    a: "Both Free and Pro plans support unlimited pet profiles. Whether you have 1 pet or a whole fur family, PetCare OS grows with you.",
+  },
+  {
+    q: "What kind of health records can I store?",
+    a: "You can store vaccinations, medications, vet visit notes, lab results, insurance documents, and any other health-related files. Our AI scan feature can even auto-extract data from uploaded documents.",
+  },
+  {
+    q: "Can I share my pet's records with my vet?",
+    a: "Absolutely. Every pet gets an Emergency Mode QR code that instantly surfaces critical health information. Pro users can also generate a Boarding Passport with complete medical history.",
+  },
+  {
+    q: "How does the AI Health Intelligence work?",
+    a: "Our AI analyzes your pet's health score, medication history, and uploaded documents to surface personalized recommendations, detect potential drug interactions, and alert you to concerning trends before they become serious.",
+  },
+  {
+    q: "Can I cancel my Pro subscription anytime?",
+    a: "Yes, you can cancel anytime with no questions asked. You'll retain access to Pro features until the end of your billing period, then seamlessly fall back to the Free plan.",
   },
 ];
+
+const FAQItem = ({ q, a }: { q: string; a: string }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-b border-border last:border-0">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-between w-full py-5 text-left gap-4"
+      >
+        <span className="text-base font-semibold text-foreground">{q}</span>
+        <ChevronDown
+          className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      <motion.div
+        initial={false}
+        animate={{ height: open ? "auto" : 0, opacity: open ? 1 : 0 }}
+        transition={{ duration: 0.25, ease: "easeInOut" }}
+        className="overflow-hidden"
+      >
+        <p className="text-sm text-muted-foreground leading-relaxed pb-5">{a}</p>
+      </motion.div>
+    </div>
+  );
+};
 
 const PricingSection = () => {
   return (
@@ -81,7 +115,7 @@ const PricingSection = () => {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto mb-20">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.name}
@@ -141,6 +175,26 @@ const PricingSection = () => {
             </motion.div>
           ))}
         </div>
+
+        {/* FAQ Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-2xl mx-auto"
+        >
+          <div className="text-center mb-10">
+            <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">FAQ</p>
+            <h2 className="text-2xl sm:text-3xl font-bold leading-tight tracking-tight">
+              Frequently asked questions
+            </h2>
+          </div>
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": faqs.map(faq => ({ "@type": "Question", "name": faq.q, "acceptedAnswer": { "@type": "Answer", "text": faq.a } })) }) }} /><div className="rounded-2xl border border-border bg-card px-6">
+            {faqs.map((faq) => (
+              <FAQItem key={faq.q} q={faq.q} a={faq.a} />
+            ))}
+          </div>
+        </motion.div>
       </div>
     </section>
   );

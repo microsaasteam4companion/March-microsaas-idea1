@@ -50,19 +50,7 @@ const HeroSection = () => {
                 </a>
               </div>
 
-              {/* Stats row - Minimalist */}
-              <div className="flex items-center gap-10 border-t border-border/60 pt-8">
-            {[
-              { value: "37M+", label: "Pet households" },
-              { value: "4.9/5", label: "App rating" },
-              { value: "<2min", label: "Setup time" },
-            ].map((s) => (
-              <div key={s.label}>
-                  <div className="text-2xl font-display font-semibold text-foreground">{s.value}</div>
-                  <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider mt-1">{s.label}</div>
-                </div >
-              ))}
-            </div >
+
           </motion.div >
 
   {/* Right - Photo grid */ }
