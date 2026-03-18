@@ -6,7 +6,9 @@ import {
   Bell, Settings, LogOut, Plus, Search, TrendingUp,
   Activity, Droplets, Moon, Sun, Utensils, Camera, Shield, AlertCircle,
   ChevronRight, Weight, Clock, Thermometer, Edit, Trash2, X, Sparkles, Bot,
+  Heart,
 } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import Tesseract from "tesseract.js";
 import { toast } from "sonner";
 import dogPortrait from "@/assets/dog-portrait.jpg";
@@ -24,12 +26,31 @@ import { useActivities, PetActivity } from "@/hooks/useActivities";
 import { AddPetModal } from "@/components/AddPetModal";
 import { AddEventModal } from "@/components/AddEventModal";
 import { AIAssistantModal } from "@/components/AIAssistantModal";
+import { PetTranslatorModal } from "@/components/PetTranslatorModal";
+import { DigitalIDModal } from "@/components/DigitalIDModal";
+import { PawsAndPlatesModal } from "@/components/PawsAndPlatesModal";
+import { Mic, ScanFace, ChefHat } from "lucide-react";
+
+const generateMockChartData = (currentHealth: number, currentWeight: string) => {
+  const weightNum = parseFloat(currentWeight) || 12;
+  const now = new Date();
+  return Array.from({length: 6}).map((_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    const monthStr = d.toLocaleDateString("en-US", { month: "short" });
+    return {
+      name: monthStr,
+      Health: Math.round(Math.min(100, Math.max(0, currentHealth + (Math.random() * 10 - 5)))),
+      Weight: Number(Math.max(0, weightNum + (Math.random() * 2 - 1)).toFixed(1))
+    };
+  });
+};
 
 const quickActions = [
   { id: "vaccine", icon: Syringe, label: "Add Vaccine", color: "bg-teal-light text-secondary" },
   { id: "med", icon: Pill, label: "Log Medication", color: "bg-amber-light text-primary" },
   { id: "health", icon: HeartPulse, label: "Health Check", color: "bg-coral-light text-coral" },
   { id: "doc", icon: Sparkles, label: "AI Scan Doc", color: "bg-violet text-white shadow-sm shadow-violet/20" },
+  { id: "translator", icon: Mic, label: "Pet Translator", color: "bg-blue/10 text-blue font-bold shadow-sm" },
 ];
 
 const Dashboard = () => {
@@ -62,6 +83,9 @@ const Dashboard = () => {
   const [defaultEventType, setDefaultEventType] = useState<"vaccine" | "appointment" | "medication" | "other" | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedActivityForAI, setSelectedActivityForAI] = useState<PetActivity | null>(null);
+  const [showTranslator, setShowTranslator] = useState(false);
+  const [showDigitalID, setShowDigitalID] = useState(false);
+  const [showChefMode, setShowChefMode] = useState(false);
 
   const processMedicalText = (text: string) => {
     const lowerText = text.toLowerCase();
@@ -229,6 +253,7 @@ const Dashboard = () => {
 
   // Use dynamic default images if empty
   const getPetImage = (petObj: any) => {
+    if (!petObj) return logoPaw;
     if (petObj.image) return petObj.image;
     const species = (petObj.species || "").toLowerCase();
     if (species.includes("cat")) return catPortrait;
@@ -289,7 +314,9 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center shadow-sm">
-              <PawPrint className="h-4 w-4 text-primary-foreground" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-primary-foreground">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor"/>
+              </svg>
             </div>
             <span className="font-display text-lg font-bold text-foreground tracking-tight hidden sm:inline">PetCare OS</span>
           </div>
@@ -381,6 +408,8 @@ const Dashboard = () => {
                 onClick={() => {
                   if (a.id === "doc") {
                     fileInputRef.current?.click();
+                  } else if (a.id === "translator") {
+                    setShowTranslator(true);
                   } else if (a.id === "vaccine") {
                     setDefaultEventType("vaccine"); setEventToEdit(null); setShowAddEvent(true);
                   } else if (a.id === "med") {
@@ -440,7 +469,9 @@ const Dashboard = () => {
                           ? "border-primary bg-primary/5 shadow-sm"
                           : "border-border/60 bg-card hover:border-border"
                           }`}>
-                        <img src={getPetImage(p)} alt={p.name} className="h-12 w-12 rounded-md object-cover shadow-sm" />
+                        <div className="relative inline-block">
+                          <img src={getPetImage(p)} alt={p.name} className={`h-12 w-12 rounded-md object-cover shadow-sm transition-all duration-300 ${p.healthScore < 80 || events.some(e => e.petId === p.id && e.urgent) ? "avatar-warning border-2 border-destructive" : ""}`} />
+                        </div>
                         <div className="text-left">
                           <div className="text-base font-bold text-foreground font-display">{p.name}</div>
                           <div className="text-sm text-muted-foreground">{p.breed}</div>
@@ -459,7 +490,15 @@ const Dashboard = () => {
                         className="rounded-lg border border-border/60 bg-card overflow-hidden shadow-sm"
                       >
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6">
-                          <img src={getPetImage(pet)} alt={pet.name} className="h-20 w-20 rounded-md object-cover shadow-sm border border-border/50" />
+                          <div className="relative inline-block shrink-0">
+                            <img src={getPetImage(pet)} alt={pet.name} className={`h-20 w-20 rounded-md object-cover shadow-sm border transition-all duration-300 ${pet.healthScore < 80 || urgentAlerts.length > 0 ? "avatar-warning border-destructive" : "border-border/50"}`} />
+                            {pet.healthScore >= 80 && urgentAlerts.length === 0 && (
+                              <div className="absolute inset-0 pointer-events-none overflow-visible">
+                                <Heart className="absolute -top-2 -right-2 h-5 w-5 text-coral animate-float-hearts" fill="currentColor" />
+                                <Sparkles className="absolute -bottom-2 -left-2 h-4 w-4 text-amber animate-sparkle-spin" />
+                              </div>
+                            )}
+                          </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-3 mb-1.5">
                               <h3 className="text-3xl font-bold text-foreground font-display">{pet.name}</h3>
@@ -510,6 +549,31 @@ const Dashboard = () => {
                                 ))}
                               </div>
 
+                              {/* Interactive Health Tracking Chart */}
+                              <div className="mb-4 rounded-lg border border-border bg-card p-4">
+                                <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                                  <TrendingUp className="h-4 w-4 text-primary" />
+                                  Health & Weight Trends
+                                </h4>
+                                <div className="h-48 w-full">
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={generateMockChartData(pet.healthScore, pet.weight)} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
+                                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} dy={10} />
+                                      <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                                      <YAxis yAxisId="right" orientation="right" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                                      <Tooltip
+                                        contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+                                        itemStyle={{ color: "hsl(var(--foreground))", fontWeight: "bold" }}
+                                        labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+                                      />
+                                      <Line yAxisId="right" name="Health Score" type="monotone" dataKey="Health" stroke="hsl(var(--secondary))" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                                      <Line yAxisId="left" name="Weight (kg)" type="monotone" dataKey="Weight" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                                    </LineChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              </div>
+
                               {/* Dynamic AI Insight Recommendation */}
                               <div className={`mb-4 rounded-lg border p-4 ${
                                 pet.healthScore < 80 ? "border-destructive/20 bg-destructive/5" : "border-violet/20 bg-violet/5"
@@ -531,6 +595,7 @@ const Dashboard = () => {
                                 {[
                                   { icon: FileText, label: "View Records", onClick: () => setActiveTab("records") },
                                   { icon: Edit, label: "Edit Profile", onClick: handleEditPetClick },
+                                  { icon: ScanFace, label: "Digital ID", onClick: () => setShowDigitalID(true) },
                                 ].map((a) => (
                                   <button key={a.label} onClick={a.onClick}
                                     className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent hover:border-primary/20 transition-all">
@@ -756,13 +821,28 @@ const Dashboard = () => {
               </div>
             </motion.div>
 
-            {/* Quick tip */}
+            {/* Pet Gallery */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
-                <div className="text-xs font-bold text-primary mb-1">💡 Pro Tip</div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Upload your pet's vaccination certificates as PDFs and we'll auto-extract the dates and set reminders.
-                </p>
+              <h2 className="text-lg font-bold text-foreground mb-3">🐾 Pet Gallery</h2>
+              <div className="rounded-xl border border-border bg-card p-4">
+                {pets.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">Add pets to see their gallery here.</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {pets.slice(0, 6).map((p) => (
+                      <div key={p.id} className="relative group overflow-hidden rounded-lg aspect-square">
+                        <img
+                          src={getPetImage(p)}
+                          alt={p.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5">
+                          <span className="text-[10px] font-bold text-white truncate">{p.name}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
@@ -770,6 +850,23 @@ const Dashboard = () => {
       </main>
 
       {/* Modals */}
+      <PetTranslatorModal
+        open={showTranslator}
+        onOpenChange={setShowTranslator}
+        petName={pet?.name}
+      />
+      <DigitalIDModal
+        open={showDigitalID}
+        onOpenChange={setShowDigitalID}
+        pet={pet}
+        ownerName={displayName}
+        petImage={getPetImage(pet)}
+      />
+      <PawsAndPlatesModal
+        open={showChefMode}
+        onOpenChange={setShowChefMode}
+        petName={pet?.name}
+      />
       <AddPetModal
         open={showAddPet}
         onOpenChange={setShowAddPet}
@@ -804,6 +901,26 @@ const Dashboard = () => {
           petName={selectedActivityForAI.petName}
         />
       )}
+
+      {/* Floating Chatbot Button */}
+      <motion.button
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => {
+          if (pet && activities.length > 0) {
+            setSelectedActivityForAI(activities[0] as PetActivity);
+          } else {
+            toast.info("Ask me anything about your pet's health!", { description: "Add a pet and some activity to get personalized AI insights." });
+          }
+        }}
+        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:bg-primary/90 transition-colors"
+        aria-label="Open AI Pet Assistant"
+      >
+        <Bot className="h-6 w-6" />
+      </motion.button>
     </div>
   );
 };

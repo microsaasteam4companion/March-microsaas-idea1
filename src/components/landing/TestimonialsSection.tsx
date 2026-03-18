@@ -18,7 +18,7 @@ const testimonials = [
     name: "James Cooper",
     role: "First-time cat dad",
     image: testimonial2,
-    rating: 5,
+    rating: 4,
     text: "As a new pet parent, I was overwhelmed keeping track of everything. PetCare OS made it so simple. The health score gives me peace of mind that Oliver is doing great.",
     pet: "Oliver the tabby",
     highlight: "98% health score maintained",
@@ -27,7 +27,7 @@ const testimonials = [
     name: "Mei Lin",
     role: "Dog mom & foster volunteer",
     image: testimonial3,
-    rating: 5,
+    rating: 4,
     text: "I foster dogs regularly, so keeping track of different vaccination schedules was a nightmare. Now I add each foster pup in seconds and the vet has everything they need instantly.",
     pet: "Mochi + 12 foster dogs",
     highlight: "Manages 12+ pets seamlessly",
@@ -50,7 +50,7 @@ const TestimonialsSection = () => {
             ❤️ Loved by Pet Parents
           </span>
           <h2 className="text-3xl sm:text-4xl font-bold leading-tight tracking-tight mb-4">
-            10,000+ happy <span className="italic text-primary">fur families</span>
+            5k+ happy <span className="italic text-primary">fur families</span>
           </h2>
           <p className="text-muted-foreground leading-relaxed">
             Real stories from real pet parents who simplified their pet care.

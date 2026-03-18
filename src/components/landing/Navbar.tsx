@@ -7,6 +7,7 @@ const navLinks = [
   { label: "Why PetCare OS", href: "#problem" },
   { label: "Features", href: "#features" },
   { label: "Pricing", href: "#pricing" },
+  { label: "Blogs", href: "https://pets.entrext.com", external: true },
 ];
 
 const Navbar = () => {
@@ -36,6 +37,8 @@ const Navbar = () => {
             <a
               key={l.label}
               href={l.href}
+              target={l.external ? "_blank" : undefined}
+              rel={l.external ? "noopener noreferrer" : undefined}
               className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               {l.label}
@@ -73,6 +76,8 @@ const Navbar = () => {
             <a
               key={l.label}
               href={l.href}
+              target={l.external ? "_blank" : undefined}
+              rel={l.external ? "noopener noreferrer" : undefined}
               onClick={() => setOpen(false)}
               className="px-3 py-2.5 text-base font-medium text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-all"
             >
